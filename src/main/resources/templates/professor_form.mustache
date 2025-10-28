@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Profesor</title>
+</head>
+<body>
+    <h1>Registrar Nuevo Profesor</h1>
+
+    {{#successMessage}}
+        <p style="color: green;">Éxito: {{successMessage}}</p>
+    {{/successMessage}}
+
+    {{#errorMessage}}
+        <p style="color: red;">Error: {{errorMessage}}</p>
+    {{/errorMessage}}
+
+    <form action="/professor/new" method="POST"></form>
+        <h2>Información de la Persona (Obligatorio)</h2>
+
+
+        <label for="nombre">Nombre (*):</label>
+        <input type="text" name="nombre" id="nombre" required><br><br>
+
+        <label for="apellido">Apellido (*):</label>
+        <input type="text" name="apellido" id="apellido" required><br><br>
+
+        <label for="mail">Email (*):</label>
+        <input type="email" name="mail" id="mail" required><br><br>
+
+        <label for="dni">DNI (Número) (*):</label>
+        <input type="number" name="dni" id="dni" required><br><br>
+
+        <h2>Información del Profesor (Opcional)</h2>
+
+        <label for="legajo">Legajo (Número):</label>
+        <input type="number" name="legajo" id="legajo"><br><br>
+
+        <label for="titulo">Título:</label>
+        <input type="text" name="titulo" id="titulo"><br><br>
+
+        <label for="univ_grad">Universidad de graduación:</label>
+        <input type="text" name="univ_grad" id="univ_grad"><br><br>
+
+        <label for="cargo">Cargo:</label>
+        <input type="text" name="cargo" id="cargo"><br><br>
+
+        <input type="submit" value="Registrar Profesor">
+    </form>
+
+    <hr>
+    <a href="/" onclick="event.preventDefault(); window.location.href='/';">
+        <button type="button">Cancelar y Volver al Inicio</button>
+    </a>
+
+    <p>(*) Campos obligatorios.</p>
+</body>
+</html>

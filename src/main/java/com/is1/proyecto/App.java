@@ -19,6 +19,8 @@ import java.util.Map; // Interfaz Map, utilizada para Map.of() o HashMap.
 // Importaciones de clases del proyecto
 import com.is1.proyecto.config.DBConfigSingleton; // Clase Singleton para la configuración de la base de datos.
 import com.is1.proyecto.models.User; // Modelo de ActiveJDBC que representa la tabla 'users'.
+import com.is1.proyecto.models.Person; // Modelo de ActiveJDBC que representa la tabla 'persons'.
+import com.is1.proyecto.models.Professor; // Modelo de ActiveJDBC que representa la tabla 'professors'.
 
 
 /**
@@ -155,6 +157,25 @@ public class App {
             return new ModelAndView(new HashMap<>(), "user_form.mustache"); // No pasa un modelo específico, solo el formulario.
         }, new MustacheTemplateEngine()); // Especifica el motor de plantillas para esta ruta.
 
+        // GET: Muestra el formulario de creación de profesor.
+        get("/professor/create", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            //Obtener y añadir mensajes de query parameters
+            String successMessage = req.queryParams("message");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+
+            // Renderiza la plantilla 'professor_form.mustache' con los datos del modelo.
+            // **Nota:** ¡Necesitás crear este archivo de plantilla!
+            return new ModelAndView(model, "professor_form.mustache");
+        }, new MustacheTemplateEngine());
 
         // --- Rutas POST para manejar envíos de formularios y APIs ---
 
@@ -290,6 +311,107 @@ public class App {
                 e.printStackTrace(); // Imprime el stack trace para depuración.
                 res.status(500); // Internal Server Error.
                 return objectMapper.writeValueAsString(Map.of("error", "Error interno al registrar usuario: " + e.getMessage()));
+            }
+        });
+
+        // POST: Maneja el envío del formulario de creación de nuevo profesor.
+        post("professor/new", (req, res) -> {
+            // 1. Obtener datos del formulario
+            String nombre = req.queryParams("nombre");
+            String apellido = req.queryParams("apellido");
+            String mail = req.queryParams("mail");
+            String dniStr = req.queryParams("dni");
+            String legajoStr = req.queryParams("legajo"); // Atributo opcional de professor.
+            String titulo = req.queryParams("titulo"); // Atributo opcional de professor.
+            String universidad = req.queryParams("universidad"); // Atributo opcional de professor.
+            String cargo = req.queryParams("cargo"); // Atributo opcional de professor.
+
+            // Variable para la redirección de error
+            String errorRedirectBase = "professor/create?error=";
+
+            // 2. Validaciones de datos
+            // 2.1. Faltan campos obligatorios (nombre, apellido, mail, dni)
+            if (nombre == null || nombre.isEmpty() || apellido == null || apellido.isEmpty() || mail == null || mail.isEmpty() || dniStr == null
+                || dniStr.isEmpty()) {
+                    res.status(400); // Bad Request
+                    res.redirect(errorRedirectBase + "Todos los campos obligatorios (nombre, apellido, mail, DNI) son requeridos.");
+                    return "";
+                }
+            
+            Integer dni;
+            try {
+                dni = Integer.parseInt(dniStr);
+            } catch (NumberFormatException e) {
+                res.status(400); // Bad Request
+                res.redirect(errorRedirectBase + "El DNI debe ser un número válido.");
+                return "";
+            }
+
+            // 2.2. Formato del mail no válido (Validación básica)
+            // Regex simple para email: local-part@domain.tld
+            String emailRegex = "^[\\w!#$%&'*+/=?`{|}~^-]+(?:\\.[\\w!#$%&'*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$";
+            if (!mail.matches(emailRegex)) {
+                res.status(400); // Bad Request
+                res.redirect(errorRedirectBase + "El formato del email no es válido.");
+                return "";
+            }
+
+            // 2.3. Email o DNI ya existen en la base de datos (Validación de unicidad)
+            // Se asume que las tablas 'persons' ya existen y tienen la unicidad configurada.
+            if (Person.findFirst("mail = ?", mail) != null) {
+                res.status(409); // Conflict
+                res.redirect(errorRedirectBase + "El email ya está registrado en el sistema.");
+                return "";
+            }
+            if (Person.findFirst("dni = ?", dni) != null) {
+                res.status(409); // Conflict
+                res.redirect(errorRedirectBase + "El DNI ya está registrado en el sistema.");
+                return "";
+            }
+
+            // 3. Flujo existoso: crear y guardar
+            try {
+                // 3.1. Crear y guardar el Person (padre)
+                Person nuevoPerson = new Person();
+                nuevoPerson.setNombre(nombre);
+                nuevoPerson.setApellido(apellido);
+                nuevoPerson.setMail(mail);
+                nuevoPerson.setDni(dni);
+                nuevoPerson.saveIt(); // Guarda la persona y obtendrá su ID.
+
+                // 3.2. Crear y guardar el Professor (hijo)
+                Professor nuevoProfessor = new Professor();
+                // **Relación 1:1/Composición**: Guardamos el ID de Person en Professor.
+                nuevoProfessor.set("person_id", nuevoPerson.getId());
+
+                // Asignar atributos específicos de Professor (incluye manejo de nulos/vacíos para los atributos opcionales)
+                if (legajoStr != null && !legajoStr.isEmpty()) {
+                    nuevoProfessor.setLegajo(Integer.parseInt(legajoStr));
+                }
+                if (titulo != null && !titulo.isEmpty()) {
+                    nuevoProfessor.setTitulo(titulo);
+                }
+                if (universidad != null && !universidad.isEmpty()) {
+                    nuevoProfessor.setUniversidadGraduado(universidad);
+                }
+                if (cargo != null && !cargo.isEmpty()) {
+                    nuevoProfessor.setCargo(cargo);
+                }
+
+                nuevoProfessor.saveIt(); // Guarda el profesor.
+
+                // 4. Redirección de éxito
+                res.status(201); // Created
+                res.redirect("/professor/create?message=Profesor " + nombre + " " + apellido + " registrado exitosamente.");
+                return "";
+
+            } catch (Exception e) {
+                // Manejo de errores de base de datos o parseo (ej. legajo no numérico)
+                System.err.println("Error al registrar el profesor: " + e.getMessage());
+                e.printStackTrace();
+                res.status(500); // Internal Server Error
+                res.redirect(errorRedirectBase + "Error interno al crear el profesor. Detalle: " + e.getMessage());
+                return "";
             }
         });
 
