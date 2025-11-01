@@ -3,56 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <title>Registro de Profesor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Registrar Nuevo Profesor</h1>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Registrar Nuevo Profesor</h1>
 
-    {{#successMessage}}
-        <p style="color: green;">Éxito: {{successMessage}}</p>
-    {{/successMessage}}
+        {{#successMessage}}
+        <!-- Estilo de mensaje de éxito idéntico al user_form -->
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline">{{successMessage}}</span>
+        </div>
+        {{/successMessage}}
 
-    {{#errorMessage}}
-        <p style="color: red;">Error: {{errorMessage}}</p>
-    {{/errorMessage}}
+        {{#errorMessage}}
+        <!-- Estilo de mensaje de error idéntico al user_form -->
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline">{{errorMessage}}</span>
+        </div>
+        {{/errorMessage}}
 
-    <form action="/professor/new" method="POST"></form>
-        <h2>Información de la Persona (Obligatorio)</h2>
+        <form action="/professor/new" method="post" class="space-y-4">
+            <!-- SECCIÓN OBLIGATORIA: DATOS DE PERSONA -->
+            <h2 class="text-xl font-semibold text-gray-700 mb-2">Información Obligatoria
+                <span class="text-red-500 text-sm">(*)</span>
+            </h2>
 
+            <div>
+                <label for="nombre" class="block text-gray-700 text-sm font-medium mb-1">Nombre (*):</label>
+                <input type="text" id="nombre" name="nombre" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label for="apellido" class="block text-gray-700 text-sm font-medium mb-1">Apellido (*):</label>
+                <input type="text" id="apellido" name="apellido" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label for="dni" class="block text-gray-700 text-sm font-medium mb-1">DNI (Número) (*):</label>
+                <input type="number" id="dni" name="dni" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label for="mail" class="block text-gray-700 text-sm font-medium mb-1">Correo Electrónico (*):</label>
+                <input type="email" id="mail" name="mail" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
 
-        <label for="nombre">Nombre (*):</label>
-        <input type="text" name="nombre" id="nombre" required><br><br>
+            <!-- SECCIÓN OPCIONAL: DATOS DE PROFESOR -->
+            <h2 class="text-xl font-semibold text-gray-700 mb-2 pt-4 border-t border-gray-200">Información Opcional
+            </h2>
 
-        <label for="apellido">Apellido (*):</label>
-        <input type="text" name="apellido" id="apellido" required><br><br>
+            <div>
+                <label for="legajo" class="block text-gray-700 text-sm font-medium mb-1">Legajo (Número):</label>
+                <input type="number" id="legajo" name="legajo"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label for="titulo" class="block text-gray-700 text-sm font-medium mb-1">Título:</label>
+                <input type="text" id="titulo" name="titulo"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label for="universidad" class="block text-gray-700 text-sm font-medium mb-1">Universidad de Graduación:</label>
+                <input type="text" id="universidad" name="universidad"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label for="cargo" class="block text-gray-700 text-sm font-medium mb-1">Cargo:</label>
+                <input type="text" id="cargo" name="cargo"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
 
-        <label for="mail">Email (*):</label>
-        <input type="email" name="mail" id="mail" required><br><br>
-
-        <label for="dni">DNI (Número) (*):</label>
-        <input type="number" name="dni" id="dni" required><br><br>
-
-        <h2>Información del Profesor (Opcional)</h2>
-
-        <label for="legajo">Legajo (Número):</label>
-        <input type="number" name="legajo" id="legajo"><br><br>
-
-        <label for="titulo">Título:</label>
-        <input type="text" name="titulo" id="titulo"><br><br>
-
-        <label for="univ_grad">Universidad de graduación:</label>
-        <input type="text" name="univ_grad" id="univ_grad"><br><br>
-
-        <label for="cargo">Cargo:</label>
-        <input type="text" name="cargo" id="cargo"><br><br>
-
-        <input type="submit" value="Registrar Profesor">
-    </form>
-
-    <hr>
-    <a href="/" onclick="event.preventDefault(); window.location.href='/';">
-        <button type="button">Cancelar y Volver al Inicio</button>
-    </a>
-
-    <p>(*) Campos obligatorios.</p>
+            <button type="submit"
+                    class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 mt-6">
+                Registrar Profesor
+            </button>
+            <div class="text-center mt-4">
+                <!-- El enlace se corrigió para ir al dashboard -->
+                <a href="/dashboard" class="text-blue-600 hover:underline text-sm">Volver al Dashboard</a>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

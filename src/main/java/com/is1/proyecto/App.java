@@ -16,6 +16,8 @@ import spark.template.mustache.MustacheTemplateEngine; // Motor de plantillas Mu
 import java.util.HashMap; // Para crear mapas de datos (modelos para las plantillas).
 import java.util.Map; // Interfaz Map, utilizada para Map.of() o HashMap.
 
+//import javax.swing.plaf.basic.BasicRootPaneUI;
+
 // Importaciones de clases del proyecto
 import com.is1.proyecto.config.DBConfigSingleton; // Clase Singleton para la configuración de la base de datos.
 import com.is1.proyecto.models.User; // Modelo de ActiveJDBC que representa la tabla 'users'.
@@ -240,6 +242,7 @@ public class App {
             if (ac == null) {
                 res.status(401); // Unauthorized.
                 model.put("errorMessage", "Usuario o contraseña incorrectos."); // Mensaje genérico por seguridad.
+                // Retorna la plantilla renderizada a String.
                 return new ModelAndView(model, "login.mustache"); // Renderiza la plantilla de login con error.
             }
 
@@ -249,6 +252,7 @@ public class App {
             // Compara la contraseña en texto plano ingresada con la contraseña hasheada almacenada.
             // BCrypt.checkpw hashea la plainTextPassword con el salt de storedHashedPassword y compara.
             if (BCrypt.checkpw(plainTextPassword, storedHashedPassword)) {
+
                 // Autenticación exitosa.
                 res.status(200); // OK.
 
@@ -256,11 +260,11 @@ public class App {
                 req.session(true).attribute("currentUserUsername", username); // Guarda el nombre de usuario en la sesión.
                 req.session().attribute("userId", ac.getId()); // Guarda el ID de la cuenta en la sesión (útil).
                 req.session().attribute("loggedIn", true); // Establece una bandera para indicar que el usuario está logueado.
-
+                
                 System.out.println("DEBUG: Login exitoso para la cuenta: " + username);
                 System.out.println("DEBUG: ID de Sesión: " + req.session().id());
-
-
+                
+                
                 model.put("username", username); // Añade el nombre de usuario al modelo para el dashboard.
                 // Renderiza la plantilla del dashboard tras un login exitoso.
                 return new ModelAndView(model, "dashboard.mustache");
@@ -272,7 +276,6 @@ public class App {
                 return new ModelAndView(model, "login.mustache"); // Renderiza la plantilla de login con error.
             }
         }, new MustacheTemplateEngine()); // Especifica el motor de plantillas para esta ruta POST.
-
 
         // POST: Endpoint para añadir usuarios (API que devuelve JSON, no HTML).
         // Advertencia: Esta ruta tiene un propósito diferente a las de formulario HTML.
@@ -292,13 +295,12 @@ public class App {
             try {
                 // --- Creación y guardado del usuario usando el modelo ActiveJDBC ---
                 User newUser = new User(); // Crea una nueva instancia de tu modelo User.
-                // ¡ADVERTENCIA DE SEGURIDAD CRÍTICA!
-                // En una aplicación real, las contraseñas DEBEN ser hasheadas (ej. con BCrypt)
-                // ANTES de guardarse en la base de datos, NUNCA en texto plano.
-                // (Nota: El código original tenía la contraseña en texto plano aquí.
-                // Se recomienda usar `BCrypt.hashpw(password, BCrypt.gensalt())` como en la ruta '/user/new').
+
+                // Hashea la contraseña de forma segura (como en la ruta /user/new)
+                String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+
                 newUser.set("name", name); // Asigna el nombre al campo 'name'.
-                newUser.set("password", password); // Asigna la contraseña al campo 'password'.
+                newUser.set("password", hashedPassword); // Asigna la contraseña hasheada.
                 newUser.saveIt(); // Guarda el nuevo usuario en la tabla 'users'.
 
                 res.status(201); // Created.
@@ -386,7 +388,16 @@ public class App {
 
                 // Asignar atributos específicos de Professor (incluye manejo de nulos/vacíos para los atributos opcionales)
                 if (legajoStr != null && !legajoStr.isEmpty()) {
-                    nuevoProfessor.setLegajo(Integer.parseInt(legajoStr));
+                    // Manejo del NumberFormatException si legajoStr no es un número (aunque ya lo hicimos para DNI, mejor ser cauteloso)
+                    try {
+                        nuevoProfessor.setLegajo(Integer.parseInt(legajoStr));
+                    } catch (NumberFormatException e) {
+                        // En caso de error de parseo, redirigir y manejar la transacción (rollback implícito por el filtro after)
+                        res.status(400); // Bad Request
+                        res.redirect(errorRedirectBase + "El número de Legajo debe ser un número válido.");
+                        return "";
+                    }
+                    
                 }
                 if (titulo != null && !titulo.isEmpty()) {
                     nuevoProfessor.setTitulo(titulo);

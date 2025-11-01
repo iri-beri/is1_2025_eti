@@ -2,37 +2,69 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device width, initial-scale=1.0">
     <title>Dashboard - Bienvenido</title>
+    <!-- Carga de Tailwind CSS para el estilo -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>/* Definición de la fuente Inter como recomendada */ :root { font-family: 'Inter', sans-serif; }</style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Panel de Control</h1>
+    <!-- Contenedor principal del dashboard -->
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-2xl border border-gray-200">
+        <h1 class="text-3xl font-extrabold text-center text-gray-900 mb-6">Panel de Control</h1>
 
+        <!-- Mensaje de bienvenida condicional -->
         {{#username}}
-        <p class="text-xl text-center text-gray-700 mb-8">¡Bienvenido, <span class="font-semibold text-blue-600">{{username}}</span>!</p>
+        <p class="text-xl text-center text-gray-700 mb-8">
+            ¡Bienvenido, <span class="font-bold text-blue-600">{{username}}</span>!
+        </p>
         {{/username}}
         {{^username}}
         <p class="text-xl text-center text-gray-700 mb-8">¡Bienvenido!</p>
         {{/username}}
 
+        <!-- Sección de Acciones Rápidas (Perfil y Configuraciones) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-blue-50 border border-blue-200 p-6 rounded-lg text-center shadow-sm">
-                <h2 class="text-2xl font-bold text-blue-700 mb-3">Tu Perfil</h2>
-                <p class="text-gray-600 mb-4">Gestiona la información de tu cuenta.</p>
-                <a href="/profile" class="inline-block bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">Ver Perfil</a>
+            <!-- Tarjeta de Perfil -->
+            <div class="bg-blue-50 border border-blue-300 p-6 rounded-lg text-center shadow-md hover:shadow-lg transition duration-300">
+                <h2 class="text-2xl font-semibold text-blue-800 mb-3">Tu Perfil</h2>
+                <p class="text-gray-600 mb-4">Gestiona la informacion de tu cuenta personal.</p>
+                <a href="/profile" class="inline-block bg-blue-600 text-white py-2 px-4 rounded-full font-medium hover:bg-blue-700 transition duration-300 shadow-lg">
+                    Ver Perfil
+                </a>
             </div>
-            <div class="bg-green-50 border border-green-200 p-6 rounded-lg text-center shadow-sm">
-                <h2 class="text-2xl font-bold text-green-700 mb-3">Configuraciones</h2>
-                <p class="text-gray-600 mb-4">Ajusta las preferencias de tu aplicación.</p>
-                <a href="/settings" class="inline-block bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition duration-300">Configuración</a>
+            <!-- Tarjeta de Configuraciones -->
+            <div class="bg-green-50 border border-green-300 p-6 rounded-lg text-center shadow-md hover:shadow-lg transition duration-300">
+                <h2 class="text-2xl font-semibold text-green-800 mb-3">Configuraciones</h2>
+                <p class="text-gray-600 mb-4">Ajusta las preferencias de la aplicación.</p>
+                <a href="/settings" class="inline-block bg-green-600 text-white py-2 px-4 rounded-full font-medium hover:bg-green-700 transition duration-300 shadow-lg">
+                    Configuración
+                </a>
             </div>
         </div>
 
-        <div class="text-center mt-6">
-            <a href="/logout" class="inline-block bg-red-600 text-white py-2 px-6 rounded-md hover:bg-red-700 transition duration-300 text-lg">Cerrar Sesión</a>
+        <!-- Separador -->
+        <hr class="my-8 border-gray-300">
+
+        <!-- Sección de Gestión de Personal (Nueva Sección) -->
+        <div class="bg-indigo-50 border border-indigo-300 p-6 rounded-lg text-center shadow-md mb-8">
+            <h2 class="text-2xl font-semibold text-indigo-800 mb-4">Gestión de Personal</h2>
+            <p class="text-gray-600 mb-6">
+                Acciones administrativas relacionadas con la plantilla de personal.
+            </p>
+            <!-- Botón de Registrar Nuevo Profesor -->
+            <a href="/professor/create" class="inline-block bg-indigo-600 text-white py-3 px-8 rounded-full font-bold shadow-xl hover:bg-indigo-700 transition duration-300 transform hover:scale-105">
+                + Registrar Nuevo Profesor
+            </a>
+        </div>
+
+        <!-- Botón de Cerrar Sesión (al final) -->
+        <div class="text-center mt-8">
+            <a href="/logout" class="inline-block bg-red-600 text-white py-2 px-6 rounded-full font-medium hover:bg-red-700 transition duration-300 text-lg shadow-md">
+                Cerrar Sesión
+            </a>
         </div>
     </div>
+
 </body>
 </html>
