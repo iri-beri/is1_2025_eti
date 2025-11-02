@@ -15,8 +15,13 @@ import spark.template.mustache.MustacheTemplateEngine; // Motor de plantillas Mu
 // Importaciones estándar de Java
 import java.util.HashMap; // Para crear mapas de datos (modelos para las plantillas).
 import java.util.Map; // Interfaz Map, utilizada para Map.of() o HashMap.
-
-//import javax.swing.plaf.basic.BasicRootPaneUI;
+import java.io.BufferedReader;
+// Importaciones para manejo de archivos SQL
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 // Importaciones de clases del proyecto
 import com.is1.proyecto.config.DBConfigSingleton; // Clase Singleton para la configuración de la base de datos.
@@ -36,6 +41,56 @@ public class App {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
+     * Inicializa la base de datos ejecutando el script de esquema SQL (scheme.sql).
+     * Esto asegura que todas las tablas existan antes de que la aplicación reciba peticiones.
+     * * NOTA: Esto abre y cierra una conexión temporalmente para propósitos de inicialización.
+     */
+    private static void initializeDatabase(DBConfigSingleton dbConfig) {
+        System.out.println("DEBUG: Iniciando verificación y carga de esquema de la base de datos...");
+
+        try {
+            // Abrir una conexión temporal para la inicialización, usando las credenciales del Singleton.
+            Base.open(dbConfig.getDriver(), dbConfig.getDbUrl(), dbConfig.getUser(), dbConfig.getPass());
+
+            // 1. Leer el contenido del archivo scheme.sql desde el CLASSPATH
+            InputStream inputStream = App.class.getClassLoader().getResourceAsStream("scheme.sql");
+
+            if (inputStream == null) {
+                // Si el archivo no se encuentra en el classpath, se lanza una excepción.
+                throw new IOException("FATAL: Archivo 'scheme.sql' no encontrado en el classpath (ruta src/main/resources).");
+            }
+            
+            // Leer el contenido completo del InputStream en un String
+            StringBuilder sb = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append("\n");
+                }
+            }
+            String sqlScheme = sb.toString();
+
+            
+            // 2. Ejecutar el script SQL (incluirá DROP TABLE y CREATE TABLE).
+            Base.exec(sqlScheme);
+
+            System.out.println("DEBUG: Esquema de base de datos cargado exitosamente (Tablas: users, persons, professors).");
+
+        } catch (IOException e) {
+            System.err.println("FATAL: No se pudo leer el archivo scheme.sql. La aplicación no puede iniciar. Error: " + e.getMessage());
+            // Detiene la ejecución si el archivo clave no se encuentra.
+            System.exit(1);
+        } catch (Exception e) {
+            System.err.println("FATAL: Error durante la inicialización de la base de datos. La aplicación no puede iniciar. Error: " + e.getMessage());
+            // Detiene la ejecución si hay un error de BD (ej. conexión).
+            System.exit(1);
+        } finally {
+            // Cierra la conexión temporarl de inicialización.
+            Base.close();
+        }
+    }
+
+    /**
      * Método principal que se ejecuta al iniciar la aplicación.
      * Aquí se configuran todas las rutas y filtros de Spark.
      */
@@ -44,6 +99,11 @@ public class App {
 
         // Obtener la instancia única del singleton de configuración de la base de datos.
         DBConfigSingleton dbConfig = DBConfigSingleton.getInstance();
+        
+        // ********************************************************************
+        // LLAMADA CLAVE: Inicializa las tablas antes de cualquier solicitud.
+        initializeDatabase(dbConfig);
+        // ********************************************************************
 
         // --- Filtro 'before' para gestionar la conexión a la base de datos ---
         // Este filtro se ejecuta antes de cada solicitud HTTP.
@@ -365,6 +425,8 @@ public class App {
                 res.redirect(errorRedirectBase + "El email ya está registrado en el sistema.");
                 return "";
             }
+            // En la BD, DNI es VARCHAR, pero lo validamos con el Integer parseado previamente.
+            // Para la consulta, se puede usar el Integer o su representación String, ActiveJDBC lo gestiona.
             if (Person.findFirst("dni = ?", dni) != null) {
                 res.status(409); // Conflict
                 res.redirect(errorRedirectBase + "El DNI ya está registrado en el sistema.");
