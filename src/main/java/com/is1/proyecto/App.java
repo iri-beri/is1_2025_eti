@@ -23,6 +23,10 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+// Importaciones para la codificación de URL
+import java.net.URLEncoder;
+import java.io.UnsupportedEncodingException;
+
 // Importaciones de clases del proyecto
 import com.is1.proyecto.config.DBConfigSingleton; // Clase Singleton para la configuración de la base de datos.
 import com.is1.proyecto.models.User; // Modelo de ActiveJDBC que representa la tabla 'users'.
@@ -40,6 +44,21 @@ public class App {
     // Se inicializa una sola vez para ser reutilizada en toda la aplicación.
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * Helper que codifica un String para ser usado de forma segura como valor en un query parameter de URL.
+     * Esto implementa una solución en las redirecciones del lado del servidor.
+    */
+    private static String urlEncode(String value) {
+        try {
+            // Se usa URLEncoder para codificar el valor con UTF-8
+            return URLEncoder.encode(value, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            // Este error nunca debería ocurrir ya que UTF-8 es una codificación estándar en Java.
+            System.err.println("FATAL: Codificación UTF-8 no soportada!");
+            throw new RuntimeException("UTF-8 encoding not supported!", e);
+        }
+    }
+    
     /**
      * Inicializa la base de datos ejecutando el script de esquema SQL (scheme.sql).
      * Esto asegura que todas las tablas existan antes de que la aplicación reciba peticiones.
@@ -171,7 +190,8 @@ public class App {
             if (currentUsername == null || loggedIn == null || !loggedIn) {
                 System.out.println("DEBUG: Acceso no autorizado a /dashboard. Redirigiendo a /login.");
                 // Redirige al login con un mensaje de error.
-                res.redirect("/login?error=Debes iniciar sesión para acceder a esta página.");
+                // Se codifica el mensaje de error:
+                res.redirect("/login?error=" + urlEncode("Debes iniciar sesión para acceder a esta página."));
                 return null; // Importante retornar null después de una redirección.
             }
 
@@ -250,7 +270,7 @@ public class App {
             if (name == null || name.isEmpty() || password == null || password.isEmpty()) {
                 res.status(400); // Código de estado HTTP 400 (Bad Request).
                 // Redirige al formulario de creación con un mensaje de error.
-                res.redirect("/user/create?error=Nombre y contraseña son requeridos.");
+                res.redirect("/user/create?error=" + urlEncode("Nombre y contraseña son requeridos."));
                 return ""; // Retorna una cadena vacía ya que la respuesta ya fue redirigida.
             }
 
@@ -266,7 +286,7 @@ public class App {
 
                 res.status(201); // Código de estado HTTP 201 (Created) para una creación exitosa.
                 // Redirige al formulario de creación con un mensaje de éxito.
-                res.redirect("/user/create?message=Cuenta creada exitosamente para " + name + "!");
+                res.redirect("/user/create?message=" + urlEncode("Cuenta creada exitosamente para " + name + "!"));
                 return ""; // Retorna una cadena vacía.
 
             } catch (Exception e) {
@@ -275,7 +295,8 @@ public class App {
                 System.err.println("Error al registrar la cuenta: " + e.getMessage());
                 e.printStackTrace(); // Imprime el stack trace para depuración.
                 res.status(500); // Código de estado HTTP 500 (Internal Server Error).
-                res.redirect("/user/create?error=Error interno al crear la cuenta. Intente de nuevo.");
+                // Se codifica el mensaje de error:
+                res.redirect("/user/create?error=" + urlEncode("Error interno al crear la cuenta. Intente de nuevo."));
                 return ""; // Retorna una cadena vacía.
             }
         });
@@ -389,14 +410,14 @@ public class App {
             String cargo = req.queryParams("cargo"); // Atributo opcional de professor.
 
             // Variable para la redirección de error
-            String errorRedirectBase = "professor/create?error=";
+            String errorRedirectBase = "/professor/create?error=";
 
             // 2. Validaciones de datos
             // 2.1. Faltan campos obligatorios (nombre, apellido, mail, dni)
             if (nombre == null || nombre.isEmpty() || apellido == null || apellido.isEmpty() || mail == null || mail.isEmpty() || dniStr == null
                 || dniStr.isEmpty()) {
                     res.status(400); // Bad Request
-                    res.redirect(errorRedirectBase + "Todos los campos obligatorios (nombre, apellido, mail, DNI) son requeridos.");
+                    res.redirect(errorRedirectBase + urlEncode("Todos los campos obligatorios (nombre, apellido, mail, DNI) son requeridos."));
                     return "";
                 }
             
@@ -405,7 +426,8 @@ public class App {
                 dni = Integer.parseInt(dniStr);
             } catch (NumberFormatException e) {
                 res.status(400); // Bad Request
-                res.redirect(errorRedirectBase + "El DNI debe ser un número válido.");
+                // Se codifica el mensaje de error:
+                res.redirect(errorRedirectBase + urlEncode("El DNI debe ser un número válido."));
                 return "";
             }
 
@@ -414,7 +436,8 @@ public class App {
             String emailRegex = "^[\\w!#$%&'*+/=?`{|}~^-]+(?:\\.[\\w!#$%&'*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$";
             if (!mail.matches(emailRegex)) {
                 res.status(400); // Bad Request
-                res.redirect(errorRedirectBase + "El formato del email no es válido.");
+                // Se codifica el mensaje de error:
+                res.redirect(errorRedirectBase + urlEncode("El formato del email no es válido."));
                 return "";
             }
 
@@ -422,14 +445,16 @@ public class App {
             // Se asume que las tablas 'persons' ya existen y tienen la unicidad configurada.
             if (Person.findFirst("mail = ?", mail) != null) {
                 res.status(409); // Conflict
-                res.redirect(errorRedirectBase + "El email ya está registrado en el sistema.");
+                // Se codifica el mensaje de error:
+                res.redirect(errorRedirectBase + urlEncode("El email ya está registrado en el sistema."));
                 return "";
             }
             // En la BD, DNI es VARCHAR, pero lo validamos con el Integer parseado previamente.
             // Para la consulta, se puede usar el Integer o su representación String, ActiveJDBC lo gestiona.
             if (Person.findFirst("dni = ?", dni) != null) {
                 res.status(409); // Conflict
-                res.redirect(errorRedirectBase + "El DNI ya está registrado en el sistema.");
+                // Se codifica el mensaje de error:
+                res.redirect(errorRedirectBase + urlEncode("El DNI ya está registrado en el sistema."));
                 return "";
             }
 
@@ -456,7 +481,8 @@ public class App {
                     } catch (NumberFormatException e) {
                         // En caso de error de parseo, redirigir y manejar la transacción (rollback implícito por el filtro after)
                         res.status(400); // Bad Request
-                        res.redirect(errorRedirectBase + "El número de Legajo debe ser un número válido.");
+                        // Se codifica el mensaje de error:
+                        res.redirect(errorRedirectBase + urlEncode("El número de Legajo debe ser un número válido."));
                         return "";
                     }
                     
@@ -475,7 +501,8 @@ public class App {
 
                 // 4. Redirección de éxito
                 res.status(201); // Created
-                res.redirect("/professor/create?message=Profesor " + nombre + " " + apellido + " registrado exitosamente.");
+                // Se codifica el mensaje de éxito:
+                res.redirect("/professor/create?message=" + urlEncode("Profesor " + nombre + " " + apellido + " registrado exitosamente."));
                 return "";
 
             } catch (Exception e) {
@@ -483,7 +510,8 @@ public class App {
                 System.err.println("Error al registrar el profesor: " + e.getMessage());
                 e.printStackTrace();
                 res.status(500); // Internal Server Error
-                res.redirect(errorRedirectBase + "Error interno al crear el profesor. Detalle: " + e.getMessage());
+                // Se codifica el mensaje de error (incluyendo el mensaje de la excepción):
+                res.redirect(errorRedirectBase + urlEncode("Error interno al crear el profesor. Detalle: " + e.getMessage()));
                 return "";
             }
         });
